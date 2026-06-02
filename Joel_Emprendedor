@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Riesgo: Guayaquil & El Niño</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .slider { -webkit-appearance: none; width: 100%; height: 8px; background: #d1d5db; outline: none; border-radius: 5px; }
+        .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: #2563eb; cursor: pointer; border-radius: 50%; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+    <!-- Header -->
+    <header class="bg-blue-900 text-white p-6 shadow-lg">
+        <div class="container mx-auto">
+            <h1 class="text-3xl font-bold">Simulador de Riesgo Físico vs. Financiero</h1>
+            <p class="text-blue-200">Caso de Estudio: Guayaquil - Fenómeno del Niño</p>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-4 md:p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- Panel de Controles -->
+        <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+            <h2 class="text-xl font-semibold mb-6 border-b pb-2">Configuración del Escenario</h2>
+            
+            <!-- Slider: Intensidad del Niño -->
+            <div class="mb-8">
+                <label class="block text-sm font-medium mb-2">Intensidad Fenómeno del Niño (Riesgo Físico)</label>
+                <input type="range" id="ninoIntensity" min="0" max="100" value="20" class="slider">
+                <div class="flex justify-between text-xs mt-2 text-gray-500">
+                    <span>Débil</span>
+                    <span>Moderado</span>
+                    <span>Extremo</span>
+                </div>
+                <p class="text-blue-600 font-bold mt-2 text-center text-lg"><span id="valNino">20</span>%</p>
+            </div>
+
+            <!-- Slider: Inversión en Mitigación -->
+            <div class="mb-8">
+                <label class="block text-sm font-medium mb-2">Inversión en Infraestructura (Prevención)</label>
+                <input type="range" id="mitigation" min="0" max="100" value="10" class="slider">
+                <div class="flex justify-between text-xs mt-2 text-gray-500">
+                    <span>Nula</span>
+                    <span>Planificada</span>
+                    <span>Resiliente</span>
+                </div>
+                <p class="text-green-600 font-bold mt-2 text-center text-lg">$<span id="valMitigation">10</span>M</p>
+            </div>
+
+            <!-- Botones de Escenarios Preestablecidos -->
+            <div class="space-y-3">
+                <p class="text-sm font-semibold">Escenarios Rápidos:</p>
+                <button onclick="setScenario(10, 80)" class="w-full bg-blue-100 text-blue-700 py-2 rounded hover:bg-blue-200 transition">Escenario Optimista</button>
+                <button onclick="setScenario(60, 30)" class="w-full bg-yellow-100 text-yellow-700 py-2 rounded hover:bg-yellow-200 transition">Niño Moderado (Actual)</button>
+                <button onclick="setScenario(95, 5)" class="w-full bg-red-100 text-red-700 py-2 rounded hover:bg-red-200 transition">Desastre Natural (1997-98)</button>
+            </div>
+        </div>
+
+        <!-- Visualización de Datos -->
+        <div class="lg:col-span-2 space-y-8">
+            
+            <!-- Tarjetas de Impacto -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white p-4 rounded-lg shadow border-l-4 border-red-500 text-center">
+                    <p class="text-sm text-gray-500 uppercase">Pérdida Económica Est.</p>
+                    <p class="text-2xl font-bold text-red-600">$<span id="lossValue">0</span>M</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow border-l-4 border-orange-500 text-center">
+                    <p class="text-sm text-gray-500 uppercase">Riesgo de Impago (NPL)</p>
+                    <p class="text-2xl font-bold text-orange-600"><span id="nplValue">0</span>%</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow border-l-4 border-blue-500 text-center">
+                    <p class="text-sm text-gray-500 uppercase">Impacto en PIB Local</p>
+                    <p class="text-2xl font-bold text-blue-600">-<span id="pibValue">0</span>%</p>
+                </div>
+            </div>
+
+            <!-- Gráfico de Relación -->
+            <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+                <h3 class="text-lg font-semibold mb-4 text-center">Correlación: Riesgo Físico vs. Estabilidad Financiera</h3>
+                <canvas id="riskChart" height="150"></canvas>
+            </div>
+
+            <!-- Explicación Técnica -->
+            <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+                <h3 class="text-lg font-semibold mb-2 italic">Análisis del Contexto Guayaquil</h3>
+                <p class="text-gray-600 text-sm leading-relaxed">
+                    Guayaquil, por su ubicación a nivel del mar y su confluencia de ríos (Guayas y Daule), enfrenta un **riesgo físico** crítico durante "El Niño". 
+                    El **riesgo financiero** se manifiesta cuando las inundaciones destruyen infraestructura agrícola en los alrededores y colapsan el sistema logístico del puerto. 
+                    Esto aumenta la morosidad en el sector bancario y reduce la calificación crediticia de la región.
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const ctx = document.getElementById('riskChart').getContext('2d');
+        let riskChart;
+
+        // Elementos del DOM
+        const ninoSlider = document.getElementById('ninoIntensity');
+        const mitigationSlider = document.getElementById('mitigation');
+        const valNino = document.getElementById('valNino');
+        const valMitigation = document.getElementById('valMitigation');
+        
+        const lossDisplay = document.getElementById('lossValue');
+        const nplDisplay = document.getElementById('nplValue');
+        const pibDisplay = document.getElementById('pibValue');
+
+        function initChart() {
+            riskChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Bajo', 'Medio', 'Alto', 'Crítico'],
+                    datasets: [{
+                        label: 'Riesgo Financiero (Exposición)',
+                        data: [0, 0, 0, 0],
+                        borderColor: 'rgb(239, 68, 68)',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }, {
+                        label: 'Capacidad de Recuperación',
+                        data: [0, 0, 0, 0],
+                        borderColor: 'rgb(34, 197, 94)',
+                        borderDash: [5, 5],
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: { y: { beginAtZero: true, max: 100 } }
+                }
+            });
+        }
+
+        function updateSimulation() {
+            const nino = parseInt(ninoSlider.value);
+            const mit = parseInt(mitigationSlider.value);
+            
+            valNino.textContent = nino;
+            valMitigation.textContent = mit;
+
+            // Lógica de cálculo simplificada
+            // El riesgo financiero sube con el Niño pero baja con la mitigación
+            const baseRisk = (nino * 1.5) - (mit * 0.5);
+            const finalFinancialRisk = Math.max(0, Math.min(100, baseRisk));
+
+            // Métricas calculadas
+            const loss = (nino * 25) * (1 - (mit / 150));
+            const npl = (nino * 0.15) * (1 - (mit / 200));
+            const pib = (nino * 0.08) * (1 - (mit / 250));
+
+            // Actualizar UI
+            lossDisplay.textContent = loss.toFixed(0);
+            nplDisplay.textContent = npl.toFixed(1);
+            pibDisplay.textContent = pib.toFixed(1);
+
+            // Actualizar Gráfico
+            riskChart.data.datasets[0].data = [
+                finalFinancialRisk * 0.2, 
+                finalFinancialRisk * 0.5, 
+                finalFinancialRisk * 0.8, 
+                finalFinancialRisk
+            ];
+            riskChart.data.datasets[1].data = [mit, mit, mit, mit];
+            riskChart.update();
+        }
+
+        function setScenario(nino, mit) {
+            ninoSlider.value = nino;
+            mitigationSlider.value = mit;
+            updateSimulation();
+        }
+
+        ninoSlider.addEventListener('input', updateSimulation);
+        mitigationSlider.addEventListener('input', updateSimulation);
+
+        // Inicialización
+        initChart();
+        updateSimulation();
+    </script>
+</body>
+</html>
